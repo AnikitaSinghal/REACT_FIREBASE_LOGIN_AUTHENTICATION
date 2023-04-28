@@ -1,24 +1,51 @@
-import logo from './logo.svg';
 import './App.css';
+import {BrowserRouter as Router, Routes, Route} from 'react-router-dom'
+import Profile from './components/Profile'
+import Register from './components/Register'
+import VerifyEmail from './components/VerifyEmail';
+import Login from './components/Login'
+import {useState, useEffect} from 'react'
+import {AuthProvider} from './context/AuthContext'
+import {auth} from './firebase'
+import {onAuthStateChanged} from 'firebase/auth'
+import Protected from './components/Protected';
+import {Navigate} from 'react-router-dom'
+
 
 function App() {
+
+  const [currentUser, setCurrentUser] = useState(null)
+  const [timeActive, setTimeActive] = useState(false)
+
+  useEffect(() => {
+    onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user)
+    })
+  }, [])
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Router>
+      <AuthProvider value={{currentUser, timeActive, setTimeActive}}>
+        <Routes>
+          <Route exact path='/' element={
+            <Protected>
+              <Profile/>
+            </Protected>
+          }/>
+          <Route path="/login" element={
+            !currentUser?.emailVerified 
+            ? <Login/>
+            : <Navigate to='/' replace/>
+          } />
+          <Route path="/register" element={
+            !currentUser?.emailVerified 
+            ? <Register/>
+            : <Navigate to='/' replace/>
+          } />
+          <Route path='/verify-email' element={<VerifyEmail/>} /> 
+        </Routes>  
+      </AuthProvider>
+  </Router>
   );
 }
 
